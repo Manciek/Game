@@ -15,8 +15,7 @@ if __name__ == "__main__":
                     130, 40, 55, 60, 2, 5, 0)
 
     healing_potion = c.Usable("Healing Potion",
-                              c.UsableType.POTION,
-                              3, 100)
+                              c.UsableType.POTION, 100)
 
     c.LobbySystem.AddToInv([sword, helmet], player)
 
@@ -40,7 +39,7 @@ if __name__ == "__main__":
                 for gear in player.gear.values():
                     print(gear)
                 print("\nInventory of usables:")
-                for usable in player.usables.values():
+                for amount, usable in player.usables.values():
                     print(usable)
             case 5:
                 print("Adding 3 potions")

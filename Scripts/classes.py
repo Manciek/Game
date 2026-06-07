@@ -112,7 +112,7 @@ class Player(Character):
         self.eq: dict[GearType, Gear | None] = {}
         # Every item in the inventory - eq (ID : ITEM)
         self.gear: dict[int, Gear] = {}
-        self.usables: dict[str, Usable] = {}
+        self.usables: dict[str, tuple[int, Usable]] = {}
 
     def PrintInventory(self):
         pass
@@ -153,14 +153,13 @@ class Gear(Item):
 
 # POTIONS AND SOME OTHER SHIT
 class Usable(Item):
-    def __init__(self, name: str, item_type: UsableType, amount: int, max_amount: int):
+    def __init__(self, name: str, item_type: UsableType, max_amount: int):
         super().__init__(name, item_type)
-        self.amount = amount
         self.max_amount = max_amount
 
     def __str__(self):
         base = super().__str__()
-        return f"{base} -> amount: {self.amount} -> max: {self.max_amount}"
+        return f"{base} -> max: {self.max_amount}"
 
     def Happen(self):
         pass
@@ -228,15 +227,15 @@ class LobbySystem:
         LobbySystem.AddToInv([gear], player)
 
     @staticmethod
-    def AddToInv(items: list[Item], player: Player):
-        for item in items:
+    def AddToInv(items: list[tuple[Item, int]], player: Player):
+        for item, amount in items:
             if item.item_type in GearType:
                 player.gear[item.id] = item
             elif item.item_type in UsableType:
                 if item.name in player.usables:
-                    player.usables[item.name].amount += item.amount
+                    player.usables[item.name][0] += amount
                 else:
-                    player.usables[item.name] = item
+                    player.usables[item.name] = (amount, item)
             else:
                 print(f"Unknown item type: {item.name}, {item.item_type}")
 
