@@ -1,3 +1,26 @@
+from enum import Enum
+
+# Equipable
+class GearType(Enum):
+    WEAPON = 0
+    CHESTPLATE = 1
+    OFFHAND = 2
+    HELMET = 3
+    LEGGINGS = 4
+
+class GearRarity(Enum):
+    LEGENDARY = 0
+    MYTHIC = 1
+    RARE = 2
+    UNCOMMON = 3
+    COMMON = 4
+
+# Usable
+class UsableType(Enum):
+    POTION = 10
+    MATERIAL = 11
+
+
 class Character:
     def __init__(self, name: str):
         self.name = name
@@ -85,36 +108,63 @@ class Skill:
 class Player(Character):
     def __init__(self, name: str):
         super().__init__(name)
-        self.Initialize_HP()
         # Currently wearing that or using that.
-        # Fixed number of slots => Head, Torso, Legs, MainHand, OffHand
-        self.eq: list[Equipment] = []
-        # Every item in the inventory - eq
-        self.backpack: list[Item] = []
+        self.eq: dict[GearType, Gear | None] = {}
+        # Every item in the inventory - eq (ID : ITEM)
+        self.gear: dict[int, Gear] = {}
+        self.usables: dict[str, Usable] = {}
+
+    def PrintInventory(self):
+        pass
 
 class Enemy(Character):
     pass
 
 class Item:
-    def __init__(self, name):
+    _next_item_id = 1
+
+    def __init__(self, name: str, item_type: GearType | UsableType):
         self.name = name
+        self.item_type = item_type
+
+    def __str__(self):
+        return f"Item name: {self.name} -> type: {self.item_type}"
 
 # ARMOR TYPES AND WEAPON + OFFHAND
-class Equipment(Item):
-    def __init__(self, name, atk, deff, hp, spd, crit_dmg, crit_rt, dmg_amp):
-        super().__init__(name)
-        self.ATK = atk
-        self.DEF = deff
-        self.HP = hp
-        self.SPD = spd
-        self.CRIT_DMG = crit_dmg
-        self.CRIT_RATE = crit_rt
-        self.ALL_DMG_DEALT = dmg_amp
+class Gear(Item):
+    def __init__(self, name: str, item_type: GearType, rarity: GearRarity, atk: int, deff: int, hp: int, spd: int, crit_dmg: int, crit_rt: int, dmg_amp: int):
+        super().__init__(name, item_type)
+        self.stats = {
+            "ATK": atk,
+            "DEF": deff,
+            "HP": hp,
+            "SPD": spd,
+            "CRIT_DMG": crit_dmg,
+            "CRIT_RATE": crit_rt,
+            "ALL_DMG_DEALT": dmg_amp,
+        }
+        self.id = Item._next_item_id
+        self.rarity = rarity
+        Item._next_item_id += 1
+
+    def __str__(self):
+        base = super().__str__()
+        return f"{base} -> rarity: {self.rarity} -> id: {self.id}"
 
 # POTIONS AND SOME OTHER SHIT
 class Usable(Item):
-   def __init__(self, name):
-       super().__init__(name)
+    def __init__(self, name: str, item_type: UsableType, amount: int, max_amount: int):
+        super().__init__(name, item_type)
+        self.amount = amount
+        self.max_amount = max_amount
+
+    def __str__(self):
+        base = super().__str__()
+        return f"{base} -> amount: {self.amount} -> max: {self.max_amount}"
+
+    def Happen(self):
+        pass
+
 
 class CombatSystem:
     turn = 1
@@ -135,33 +185,11 @@ class CombatSystem:
         if not CombatSystem.Character_Alive(defender):
             defender.Die()
 
-    @staticmethod
-    def Calculate_Gear_Stats(player: Player) -> None:
-        ATK = sum(item.ATK for item in player.eq)
-        DEF = sum(item.DEF for item in player.eq)
-        HP = sum(item.HP for item in player.eq)
-        SPD = sum(item.SPD for item in player.eq)
-        CRIT_DMG = sum(item.CRIT_DMG for item in player.eq)
-        CRIT_RATE = sum(item.CRIT_RATE for item in player.eq)
-        ALL_DMG_DEALT = sum(item.ALL_DMG_DEALT for item in player.eq)
-
-        lista = {"ATK": ATK,
-                 "DEF": DEF,
-                 "HP": HP,
-                 "SPD": SPD,
-                 "CRIT_DMG": CRIT_DMG,
-                 "CRIT_RATE": CRIT_RATE,
-                 "ALL_DMG_DEALT": ALL_DMG_DEALT,
-                 }
-
-        for key, value in lista.items():
-            player.stats[f"GEAR_{key}"] = value
-
 # TO DO
     @staticmethod
     def Round_Run(player: Player, enemies: list[Enemy]) -> None:
         if CombatSystem.turn == 1:
-            CombatSystem.Calculate_Gear_Stats(player)
+            player.Initialize_HP()
 
         # 1. Status Effects
         for effect in player.status_effects:
@@ -175,3 +203,61 @@ class CombatSystem:
     @staticmethod
     def Next_Turn():
         CombatSystem.turn += 1
+
+class LobbySystem:
+    @staticmethod
+    def EquipGear(gear: Gear, player: Player) -> None:
+        # Copy the gear in the slot or None
+        gear_from_slot = player.eq.get(gear.item_type)
+        # Equip the new gear
+        player.eq[gear.item_type] = gear
+        # Delete from gear inventory the newly equipped gear
+        player.gear.pop(gear.id)
+
+        LobbySystem.Calculate_Gear_Stats(player)
+        # If there was an item equipped move it to the inv
+        if gear_from_slot:
+            player.gear[gear_from_slot.id] = gear_from_slot
+
+    @staticmethod
+    def RemoveGear(gear_type: GearType, player: Player):
+        gear = player.eq.pop(gear_type, None)
+        if gear is None:
+            print(f"No gear of type: {gear_type} equipped.\n")
+            return
+        LobbySystem.AddToInv([gear], player)
+
+    @staticmethod
+    def AddToInv(items: list[Item], player: Player):
+        for item in items:
+            if item.item_type in GearType:
+                player.gear[item.id] = item
+            elif item.item_type in UsableType:
+                if item.name in player.usables:
+                    player.usables[item.name].amount += item.amount
+                else:
+                    player.usables[item.name] = item
+            else:
+                print(f"Unknown item type: {item.name}, {item.item_type}")
+
+    @staticmethod
+    def Calculate_Gear_Stats(player: Player) -> None:
+        ATK = sum(item.stats["ATK"] for item in player.eq.values() if item is not None)
+        DEF = sum(item.stats["DEF"] for item in player.eq.values() if item is not None)
+        HP = sum(item.stats["HP"] for item in player.eq.values() if item is not None)
+        SPD = sum(item.stats["SPD"] for item in player.eq.values() if item is not None)
+        CRIT_DMG = sum(item.stats["CRIT_DMG"] for item in player.eq.values() if item is not None)
+        CRIT_RATE = sum(item.stats["CRIT_RATE"] for item in player.eq.values() if item is not None)
+        ALL_DMG_DEALT = sum(item.stats["ALL_DMG_DEALT"] for item in player.eq.values() if item is not None)
+
+        lista = {"ATK": ATK,
+                 "DEF": DEF,
+                 "HP": HP,
+                 "SPD": SPD,
+                 "CRIT_DMG": CRIT_DMG,
+                 "CRIT_RATE": CRIT_RATE,
+                 "ALL_DMG_DEALT": ALL_DMG_DEALT,
+                 }
+
+        for key, value in lista.items():
+            player.stats[f"GEAR_{key}"] = value
