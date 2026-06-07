@@ -21,27 +21,18 @@ if __name__ == "__main__":
 
     run = True
     while run:
-        inp = input("\nDo you want to: 1-See equipped | 2-Equip new item | 3-See stats | 4-See inv\n "
-                    "5-Add 3 HealPots | OTHER-Exit")
+        inp = input("\nDo you want to: 1-See the inventory | 2-Equip a new item | 3-See stats | 4-Add 3 HealPots | OTHER-Exit")
         match int(inp):
             case 1:
-                for item in player.eq.values():
-                    print(item)
+                player.PrintInventory()
             case 2:
-                ind = int(input("Gear id: "))
-                it = player.gear[ind]
+                ind = int(input("Gear id from your inventory: "))
+                it = player.gears[ind]
                 if it:
                     c.LobbySystem.EquipGear(it, player)
             case 3:
-                print(player.stats)
+                player.PrintStats()
             case 4:
-                print("Inventory of gears:")
-                for gear in player.gear.values():
-                    print(gear)
-                print("\nInventory of usables:")
-                for amount, usable in player.usables.values():
-                    print(usable)
-            case 5:
                 print("Adding 3 potions")
                 c.LobbySystem.AddToInv([(healing_potion, 3)], player)
             case _:

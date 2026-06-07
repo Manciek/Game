@@ -111,11 +111,32 @@ class Player(Character):
         # Currently wearing that or using that.
         self.eq: dict[GearType, Gear | None] = {}
         # Every item in the inventory - eq (ID : ITEM)
-        self.gear: dict[int, Gear] = {}
+        self.gears: dict[int, Gear] = {}
         self.usables: dict[str, tuple[int, Usable]] = {}
 
-    def PrintInventory(self):
-        pass
+    def PrintInventory(self) -> None:
+        print("\nEquipped items: ")
+        if len(self.eq) == 0:
+            print("None items equipped")
+        else:
+            for g_type, gear in self.eq.items():
+                print(f"Type: {g_type} -> {gear}")
+        print("\nInventory of Gears: ")
+        if len(self.gears) == 0:
+            print("No gears in the inventory")
+        else:
+            for gear in self.gears.values():
+                print(gear)
+        print("\nInventory of Usables: ")
+        if len(self.usables) == 0:
+            print("No usales/materials/etc in the inventory")
+        else:
+            for amount, item in self.usables.values():
+                print(f"Item: {item} -> {amount}")
+
+    def PrintStats(self) -> None:
+        for stat, v in self.stats.items():
+            print(f"STAT: {stat} -> {v}")
 
 class Enemy(Character):
     pass
@@ -211,12 +232,12 @@ class LobbySystem:
         # Equip the new gear
         player.eq[gear.item_type] = gear
         # Delete from gear inventory the newly equipped gear
-        player.gear.pop(gear.id)
+        player.gears.pop(gear.id)
 
         LobbySystem.Calculate_Gear_Stats(player)
         # If there was an item equipped move it to the inv
         if gear_from_slot:
-            player.gear[gear_from_slot.id] = gear_from_slot
+            player.gears[gear_from_slot.id] = gear_from_slot
 
     @staticmethod
     def RemoveGear(gear_type: GearType, player: Player):
@@ -230,7 +251,7 @@ class LobbySystem:
     def AddToInv(items: list[tuple[Item, int]], player: Player):
         for item, amount in items:
             if item.item_type in GearType:
-                player.gear[item.id] = item
+                player.gears[item.id] = item
             elif item.item_type in UsableType:
                 if item.name in player.usables:
                     player.usables[item.name][0] += amount
