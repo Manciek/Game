@@ -245,7 +245,7 @@ class LobbySystem:
         if gear is None:
             print(f"No gear of type: {gear_type} equipped.\n")
             return
-        LobbySystem.AddToInv([gear], player)
+        LobbySystem.AddToInv([(gear, 1)], player)
 
     @staticmethod
     def AddToInv(items: list[tuple[Item, int]], player: Player):
@@ -254,7 +254,7 @@ class LobbySystem:
                 player.gears[item.id] = item
             elif item.item_type in UsableType:
                 if item.name in player.usables:
-                    player.usables[item.name][0] += amount
+                    player.usables[item.name] = (player.usables[item.name][0] + amount, item)
                 else:
                     player.usables[item.name] = (amount, item)
             else:
