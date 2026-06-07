@@ -17,7 +17,7 @@ if __name__ == "__main__":
     healing_potion = c.Usable("Healing Potion",
                               c.UsableType.POTION, 100)
 
-    c.LobbySystem.AddToInv([sword, helmet], player)
+    c.LobbySystem.AddToInv([(sword, 1), (helmet, 1)], player)
 
     run = True
     while run:
@@ -43,6 +43,6 @@ if __name__ == "__main__":
                     print(usable)
             case 5:
                 print("Adding 3 potions")
-                c.LobbySystem.AddToInv([healing_potion], player)
+                c.LobbySystem.AddToInv([(healing_potion, 3)], player)
             case _:
                 run = False
