@@ -15,7 +15,7 @@ if __name__ == "__main__":
                     130, 40, 55, 60, 2, 5, 0)
 
     healing_potion = c.Usable("Healing Potion",
-                              c.UsableType.POTION, 100)
+                              c.UsableType.POTION, 11)
 
     c.LobbySystem.AddToInv([(sword, 1), (helmet, 1)], player)
 

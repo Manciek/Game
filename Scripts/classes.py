@@ -257,6 +257,9 @@ class LobbySystem:
                     player.usables[item.name] = (player.usables[item.name][0] + amount, item)
                 else:
                     player.usables[item.name] = (amount, item)
+                if player.usables[item.name][0] > player.usables[item.name][1].max_amount:
+                    player.usables[item.name] = (player.usables[item.name][1].max_amount, item)
+                    print("Exceeded the max amount so the excess was removed automatically")
             else:
                 print(f"Unknown item type: {item.name}, {item.item_type}")
 
