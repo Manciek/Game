@@ -30,9 +30,8 @@ class Character:
             "BASE_DEF": 0,
             "BASE_HP": 0,
             "BASE_SPD": 0,
-            "BASE_CRIT_RATE": 0,
-            "BASE_CRIT_DMG": 0,
-            "BASE_ALL_DMG_DEALT": 100,      # in % remember to divide by 100 and turn into int when working with all_dmg
+            "BASE_CRIT_RATE": 0,            # 0-1 but in % so can go over 100 but wont do shit
+            "BASE_CRIT_DMG": 100,           # in % so div 100
 
             "GEAR_ATK": 0,
             "GEAR_DEF": 0,
@@ -40,17 +39,20 @@ class Character:
             "GEAR_SPD": 0,
             "GEAR_CRIT_RATE": 0,
             "GEAR_CRIT_DMG": 0,
+            "GEAR_LIFESTEAL": 0,
             "GEAR_ALL_DMG_DEALT": 0,
 
-            # stats in % used as a multiplyier and dividing then by 100 and turning into int !! A_D_D MUST BE additive
+            # stats from buffs in %
             "ATK_BUFF": 100,
             "DEF_BUFF": 100,
             "HP_BUFF": 100,
             "SPD_BUFF": 100,
-            "CRIT_RATE_BUFF": 100,
+            "CRIT_RATE_BUFF": 0,
             "CRIT_DMG_BUFF": 100,
+            "LIFESTEAL_BUFF": 0,
             "ALL_DMG_DEALT_BUFF": 0,
 
+            "LEVEL": 0,
             "CURRENT_HP": 0,
             "MAX_HP": 0,
         }
@@ -73,7 +75,16 @@ class Character:
         return (self.stats["BASE_SPD"] + self.stats["GEAR_SPD"]) * int(self.stats["SPD_BUFF"] / 100)
 
     def Get_ADD(self) -> int:           # Addidtive as its a percateage in its core
-        return self.stats["BASE_ALL_DMG_DEALT"] + self.stats["GEAR_ALL_DMG_DEALT"] + self.stats["ALL_DMG_DEALT_BUFF"]
+        return self.stats["GEAR_ALL_DMG_DEALT"] + self.stats["ALL_DMG_DEALT_BUFF"]
+
+    def Get_CRIT_RATE(self) -> int:
+        return min(self.stats["BASE_CRIT_RATE"] + self.stats["GEAR_CRIT_RATE"] + self.stats["CRIT_RATE_BUFF"], 100)
+
+    def Get_CRIT_DMG(self) -> float:
+        return (self.stats["BASE_CRIT_DMG"] + self.stats["GEAR_CRIT_DMG"] + self.stats["CRIT_DMG_BUFF"]) / 100
+
+    def Get_LIFESTEAL(self) -> float:
+        return (self.stats["GEAR_LIFESTEAL"] + self.stats["LIFESTEAL_BUFF"]) / 100
 
     def Die(self) -> None:
         pass
@@ -153,7 +164,7 @@ class Item:
 
 # ARMOR TYPES AND WEAPON + OFFHAND
 class Gear(Item):
-    def __init__(self, name: str, item_type: GearType, rarity: GearRarity, atk: int, deff: int, hp: int, spd: int, crit_dmg: int, crit_rt: int, dmg_amp: int):
+    def __init__(self, name: str, item_type: GearType, rarity: GearRarity, atk: int, deff: int, hp: int, spd: int, crit_dmg: int, crit_rt: int, lifesteal: int, dmg_amp: int):
         super().__init__(name, item_type)
         self.stats = {
             "ATK": atk,
@@ -162,6 +173,7 @@ class Gear(Item):
             "SPD": spd,
             "CRIT_DMG": crit_dmg,
             "CRIT_RATE": crit_rt,
+            "LIFESTEAL": lifesteal,
             "ALL_DMG_DEALT": dmg_amp,
         }
         self.id = Item._next_item_id
@@ -227,17 +239,14 @@ class CombatSystem:
 class LobbySystem:
     @staticmethod
     def EquipGear(gear: Gear, player: Player) -> None:
-        # Copy the gear in the slot or None
-        gear_from_slot = player.eq.get(gear.item_type)
-        # Equip the new gear
-        player.eq[gear.item_type] = gear
-        # Delete from gear inventory the newly equipped gear
-        player.gears.pop(gear.id)
+        # Remove current gear slot
+        LobbySystem.RemoveGear(gear.item_type, player)
 
+        # Equip the new gear and Delete from gear inventory the newly equipped gear
+        if gear.id in player.gears.keys():
+            player.eq[gear.item_type] = gear
+            player.gears.pop(gear.id)
         LobbySystem.Calculate_Gear_Stats(player)
-        # If there was an item equipped move it to the inv
-        if gear_from_slot:
-            player.gears[gear_from_slot.id] = gear_from_slot
 
     @staticmethod
     def RemoveGear(gear_type: GearType, player: Player):
@@ -246,6 +255,7 @@ class LobbySystem:
             print(f"No gear of type: {gear_type} equipped.\n")
             return
         LobbySystem.AddToInv([(gear, 1)], player)
+        LobbySystem.Calculate_Gear_Stats(player)
 
     @staticmethod
     def AddToInv(items: list[tuple[Item, int]], player: Player):
@@ -271,6 +281,7 @@ class LobbySystem:
         SPD = sum(item.stats["SPD"] for item in player.eq.values() if item is not None)
         CRIT_DMG = sum(item.stats["CRIT_DMG"] for item in player.eq.values() if item is not None)
         CRIT_RATE = sum(item.stats["CRIT_RATE"] for item in player.eq.values() if item is not None)
+        LIFESTEAL = sum(item.stats["LIFESTEAL"] for item in player.eq.values() if item is not None)
         ALL_DMG_DEALT = sum(item.stats["ALL_DMG_DEALT"] for item in player.eq.values() if item is not None)
 
         lista = {"ATK": ATK,
@@ -279,6 +290,7 @@ class LobbySystem:
                  "SPD": SPD,
                  "CRIT_DMG": CRIT_DMG,
                  "CRIT_RATE": CRIT_RATE,
+                 "LIFESTEAL": LIFESTEAL,
                  "ALL_DMG_DEALT": ALL_DMG_DEALT,
                  }
 
