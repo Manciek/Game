@@ -1,9 +1,13 @@
 import Scripts.classes as c
+from Scripts.classes import GearType, GearRarity, UsableType
 
 if __name__ == "__main__":
     print("Start")
 
-    player = c.Player("Mike")
+    game = c.Game("Mike")
+
+    items = []
+
     sword = c.Gear("Magic Sword",
                    c.GearType.WEAPON,
                    c.GearRarity.RARE,
@@ -17,8 +21,12 @@ if __name__ == "__main__":
     healing_potion = c.Usable("Healing Potion",
                               c.UsableType.POTION, 11)
 
-    c.LobbySystem.AddToInv([(sword, 1), (helmet, 1)], player)
+    items.append((sword, 1))
+    items.append((helmet, 1))
+    game.lobby_system.AddToInv(items)
 
+    player = game.player
+    print("Seed: " + str(game.seed))
     run = True
     while run:
         inp = input("\nDo you want to: 1-See the inventory | 2-Equip a new item | 3-Remove gear"
@@ -29,14 +37,14 @@ if __name__ == "__main__":
             case 2:
                 ind = int(input("Gear id from your inventory: "))
                 it = player.gears[ind]
-                c.LobbySystem.EquipGear(it, player)
+                game.lobby_system.EquipGear(it)
             case 3:
                 inp = input("Provide slot name: [WEAPON|OFFHAND|CHESTPLATE|LEGGINGS|HELMET]: ")
-                c.LobbySystem.RemoveGear(c.GearType[inp], player)
+                game.lobby_system.RemoveGear(GearType[inp])
             case 4:
                 player.PrintStats()
             case 5:
                 print("Adding 3 potions")
-                c.LobbySystem.AddToInv([(healing_potion, 3)], player)
+                game.lobby_system.AddToInv([(healing_potion, 3)])
             case _:
                 run = False
